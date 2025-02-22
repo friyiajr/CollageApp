@@ -16,7 +16,7 @@ export const ImagePlaceholder = ({ item }: Props) => {
         height: width / 4,
         resizeMode: "cover",
       }}
-      source={require("../../assets/layouts.png")}
+      source={{ uri: `data:image/png;base64,${item}` }}
     />
   );
 };

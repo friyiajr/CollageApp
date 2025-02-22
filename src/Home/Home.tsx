@@ -14,19 +14,20 @@ import {
 import { BLUR_CONTAINER_HEIGHT, Colors } from "../components/constants";
 import { ImagePlaceholder } from "./components/ImagePlaceholder";
 import { ImageOverlay } from "./components/ImageOverlay";
-
-const DATA = [1, 2, 3, 4, 5, 6, 7, 8];
+import { usePhotos } from "./hooks/usePhotos";
 
 const { height, width } = Dimensions.get("window");
 
 export const Home = () => {
   const { push } = useNavigation<any>();
 
+  const { albumPhotos } = usePhotos();
+
   return (
     <>
       <FlatList
         style={styles.background}
-        data={DATA}
+        data={albumPhotos}
         numColumns={4}
         ListEmptyComponent={
           <View
@@ -46,8 +47,8 @@ export const Home = () => {
         renderItem={({ item, index }) => {
           return (
             <Pressable>
-              <ImagePlaceholder item="" />
-              <ImageOverlay selectedItems={[]} index={0} />
+              <ImagePlaceholder item={item} />
+              <ImageOverlay selectedItems={[]} index={index} />
             </Pressable>
           );
         }}
