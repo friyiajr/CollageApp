@@ -21,7 +21,8 @@ const { height, width } = Dimensions.get("window");
 export const Home = () => {
   const { push } = useNavigation<any>();
 
-  const { albumPhotos } = usePhotos();
+  const { albumPhotos, selectedItems, onItemSelected, skiaImages } =
+    usePhotos();
 
   return (
     <>
@@ -46,9 +47,9 @@ export const Home = () => {
         }
         renderItem={({ item, index }) => {
           return (
-            <Pressable>
+            <Pressable onPress={() => onItemSelected(index)}>
               <ImagePlaceholder item={item} />
-              <ImageOverlay selectedItems={[]} index={index} />
+              <ImageOverlay selectedItems={selectedItems} index={index} />
             </Pressable>
           );
         }}
