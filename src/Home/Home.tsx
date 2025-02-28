@@ -11,15 +11,23 @@ import {
   Image,
   ActivityIndicator,
 } from "react-native";
-import { BLUR_CONTAINER_HEIGHT, Colors } from "../components/constants";
+import {
+  BLUR_CONTAINER_HEIGHT,
+  BOX_SIZE,
+  Colors,
+} from "../components/constants";
 import { ImagePlaceholder } from "./components/ImagePlaceholder";
 import { ImageOverlay } from "./components/ImageOverlay";
 import { usePhotos } from "./hooks/usePhotos";
+import { useEditorContext } from "../context/EditorContextProvider";
+import { HorizontalImageTemplate } from "../components/templates/HorizontalImagesTemplate";
 
 const { height, width } = Dimensions.get("window");
 
 export const Home = () => {
   const { push } = useNavigation<any>();
+
+  const { setImageData } = useEditorContext();
 
   const { albumPhotos, selectedItems, onItemSelected, skiaImages } =
     usePhotos();
@@ -55,14 +63,34 @@ export const Home = () => {
         }}
       />
       <BlurView intensity={90} tint="dark" style={styles.blurContainer}>
-        <Image
-          source={require("../assets/layouts.png")}
-          resizeMode="cover"
-          style={{
-            height: 150,
-            width: 150,
-          }}
-        />
+        {skiaImages.length === 0 ? (
+          <Image
+            source={require("../assets/layouts.png")}
+            resizeMode="cover"
+            style={{
+              height: BOX_SIZE,
+              width: BOX_SIZE,
+            }}
+          />
+        ) : (
+          <Pressable
+            onPress={() => {
+              setImageData({ images: skiaImages });
+              push("Editor");
+            }}
+            style={{
+              height: BOX_SIZE,
+              width: BOX_SIZE,
+              backgroundColor: "black",
+            }}
+          >
+            <HorizontalImageTemplate
+              skiaImages={skiaImages}
+              boxHeight={BOX_SIZE}
+              showEditor={false}
+            />
+          </Pressable>
+        )}
       </BlurView>
     </>
   );

@@ -7,6 +7,7 @@ import { Editor } from "./src/Editor/Editor";
 import { createStaticNavigation } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { EditorContextProvider } from "./src/context/EditorContextProvider";
 
 const RootStack = createNativeStackNavigator({
   screens: {
@@ -30,10 +31,12 @@ const Navigation = createStaticNavigation(RootStack);
 export default function App() {
   return (
     <GestureHandlerRootView>
-      <SafeAreaProvider>
-        <StatusBar hidden />
-        <Navigation />
-      </SafeAreaProvider>
+      <EditorContextProvider>
+        <SafeAreaProvider>
+          <StatusBar hidden />
+          <Navigation />
+        </SafeAreaProvider>
+      </EditorContextProvider>
     </GestureHandlerRootView>
   );
 }
