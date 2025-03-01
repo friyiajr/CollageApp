@@ -7,9 +7,16 @@ interface EditorDataType {
   images: SkImage[];
 }
 
+interface ModifierType {
+  flip: () => void;
+  shade: () => void;
+}
+
 interface EditorContextType {
   imagesData: EditorDataType;
   setImageData: React.Dispatch<React.SetStateAction<EditorDataType>>;
+  modifiers: ModifierType;
+  setModifiers: React.Dispatch<React.SetStateAction<ModifierType>>;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -21,8 +28,15 @@ export const EditorContextProvider: React.FC<{ children: ReactNode }> = ({
     images: [],
   });
 
+  const [modifiers, setModifiers] = useState<ModifierType>({
+    flip: () => {},
+    shade: () => {},
+  });
+
   return (
-    <EditorContext.Provider value={{ imagesData, setImageData }}>
+    <EditorContext.Provider
+      value={{ imagesData, setImageData, modifiers, setModifiers }}
+    >
       {children}
     </EditorContext.Provider>
   );

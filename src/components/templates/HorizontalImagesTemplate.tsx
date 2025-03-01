@@ -2,15 +2,22 @@ import {
   Canvas,
   ImageShader,
   Rect,
+  rotate,
   RoundedRect,
   Shader,
   Skia,
   SkiaDomView,
+  vec,
 } from "@shopify/react-native-skia";
-import React, { forwardRef, RefObject } from "react";
+import React, { forwardRef, RefObject, useEffect, useState } from "react";
 import { BOX_SIZE, Colors, ImagesTemplateProps } from "../constants";
-import { useDerivedValue, useSharedValue } from "react-native-reanimated";
+import {
+  runOnJS,
+  useDerivedValue,
+  useSharedValue,
+} from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { useEditorContext } from "../../context/EditorContextProvider";
 
 type Position = "first" | "second" | "third" | "none";
 type MiddlePullState = "none" | "top" | "bottom";
@@ -22,10 +29,20 @@ const nothingSource = Skia.RuntimeEffect.Make(`
     return image.eval(xy);
   }`)!;
 
+const source = Skia.RuntimeEffect.Make(`
+    uniform shader image;
+     
+    half4 main(vec2 xy) {   
+      xy.x += sin(xy.y / 3) * 4;
+      return image.eval(xy).rbga;
+    }`)!;
+
 export const HorizontalImageTemplate = forwardRef<
   SkiaDomView,
   ImagesTemplateProps
 >(({ skiaImages, showEditor = false, boxHeight = BOX_SIZE }, ref) => {
+  const { setModifiers, modifiers } = useEditorContext();
+
   const defaultHeight = boxHeight / 3;
   const topHeight = useSharedValue(defaultHeight);
   const middleHeight = useSharedValue(defaultHeight);
@@ -34,6 +51,62 @@ export const HorizontalImageTemplate = forwardRef<
   const bottomTopBorder = useSharedValue(defaultHeight * 2);
   const position = useSharedValue<Position>("none");
   const middlePullStatus = useSharedValue<MiddlePullState>("none");
+
+  const firstTransformationState = useSharedValue([{ rotate: 0 }]);
+  const secondTransformationState = useSharedValue([{ rotate: 0 }]);
+  const thirdTransformationState = useSharedValue([{ rotate: 0 }]);
+
+  const [shaderState, setShaderState] = useState({
+    first: false,
+    second: false,
+    third: false,
+  });
+
+  const updateModifiers = (position: Position) => {
+    setModifiers({
+      ...modifiers,
+      flip: () => {
+        if (position === "first") {
+          firstTransformationState.value =
+            firstTransformationState.value[0].rotate === Math.PI
+              ? [{ rotate: 0 }]
+              : [{ rotate: Math.PI }];
+        } else if (position === "second") {
+          secondTransformationState.value =
+            secondTransformationState.value[0].rotate === Math.PI
+              ? [{ rotate: 0 }]
+              : [{ rotate: Math.PI }];
+        } else if (position === "third") {
+          thirdTransformationState.value =
+            thirdTransformationState.value[0].rotate === Math.PI
+              ? [{ rotate: 0 }]
+              : [{ rotate: Math.PI }];
+        }
+      },
+      shade: () => {
+        if (position === "first") {
+          setShaderState({
+            ...shaderState,
+            first: !shaderState.first,
+          });
+        } else if (position === "second") {
+          setShaderState({
+            ...shaderState,
+            second: !shaderState.second,
+          });
+        } else if (position === "third") {
+          setShaderState({
+            ...shaderState,
+            third: !shaderState.third,
+          });
+        }
+      },
+    });
+  };
+
+  useEffect(() => {
+    updateModifiers(position.value);
+  }, [shaderState]);
 
   const firstInnerRect = useDerivedValue(() => {
     return {
@@ -111,6 +184,8 @@ export const HorizontalImageTemplate = forwardRef<
       } else {
         position.value = "third";
       }
+
+      runOnJS(updateModifiers)(position.value);
     })
     .onChange(({ y, changeY }) => {
       if (y > 0 && y < middleTopBorder.value) {
@@ -150,11 +225,30 @@ export const HorizontalImageTemplate = forwardRef<
       middlePullStatus.value = "none";
     });
 
+  const firstTransformationOrigin = useDerivedValue(() => {
+    return vec(boxHeight / 2, topHeight.value / 2);
+  }, [topHeight]);
+
+  const secondTransformationOrigin = useDerivedValue(() => {
+    return vec(boxHeight / 2, middleTopBorder.value + middleHeight.value / 2);
+  }, [topHeight]);
+
+  const thirdTransformationOrigin = useDerivedValue(() => {
+    return vec(boxHeight / 2, bottomTopBorder.value + bottomHeight.value / 2);
+  }, [topHeight]);
+
   return (
     <GestureDetector gesture={gesture}>
       <Canvas ref={ref as RefObject<SkiaDomView>} style={{ flex: 1 }}>
-        <Rect height={topHeight} width={boxHeight} x={0} y={0}>
-          <Shader source={nothingSource}>
+        <Rect
+          origin={firstTransformationOrigin}
+          transform={firstTransformationState}
+          height={topHeight}
+          width={boxHeight}
+          x={0}
+          y={0}
+        >
+          <Shader source={shaderState.first ? source : nothingSource}>
             <ImageShader
               image={skiaImages[0]}
               fit="cover"
@@ -162,8 +256,15 @@ export const HorizontalImageTemplate = forwardRef<
             />
           </Shader>
         </Rect>
-        <Rect height={middleHeight} width={boxHeight} x={0} y={middleTopBorder}>
-          <Shader source={nothingSource}>
+        <Rect
+          transform={secondTransformationState}
+          origin={secondTransformationOrigin}
+          height={middleHeight}
+          width={boxHeight}
+          x={0}
+          y={middleTopBorder}
+        >
+          <Shader source={shaderState.second ? source : nothingSource}>
             <ImageShader
               image={skiaImages[1]}
               fit="cover"
@@ -171,8 +272,15 @@ export const HorizontalImageTemplate = forwardRef<
             />
           </Shader>
         </Rect>
-        <Rect height={bottomHeight} width={boxHeight} x={0} y={bottomTopBorder}>
-          <Shader source={nothingSource}>
+        <Rect
+          transform={thirdTransformationState}
+          origin={thirdTransformationOrigin}
+          height={bottomHeight}
+          width={boxHeight}
+          x={0}
+          y={bottomTopBorder}
+        >
+          <Shader source={shaderState.third ? source : nothingSource}>
             <ImageShader
               image={skiaImages[2]}
               fit="cover"
